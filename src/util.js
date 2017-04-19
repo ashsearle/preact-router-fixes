@@ -50,21 +50,29 @@ export function exec(url, route, opts=EMPTY) {
 	return matches;
 }
 
-export function pathRankSort(a, b) {
-	let aAttr = a.attributes || EMPTY,
-		bAttr = b.attributes || EMPTY;
-	if (aAttr.default) return 1;
-	if (bAttr.default) return -1;
-	let diff = rank(aAttr.path) - rank(bAttr.path);
-	return diff || (aAttr.path.length - bAttr.path.length);
+export function rankSort(a, b) {
+	let aRank = rankVNode(a),
+		bRank = rankVNode(b);
+	return (aRank < bRank) ? 1 :
+		(aRank == bRank) ? 0 :
+		-1;
 }
 
 export function segmentize(url) {
 	return strip(url).split('/');
 }
 
-export function rank(url) {
-	return (strip(url).match(/\/+/g) || '').length;
+const segmentReg = /(:)?([^\/]*?)([*+?]?)(?:\/+|$)/g;
+const segmentRank = (match, isParam, segment, flag) => (
+	isParam ? ('0*+?'.indexOf(flag) || 4) : (segment ? 5 : '')
+);
+
+export function rank(path) {
+	return strip(path).replace(segmentReg, segmentRank) || '5';
+}
+
+export function rankVNode({ attributes=EMPTY }) {
+	return attributes.default ? '0' : rank(attributes.path);
 }
 
 export function strip(url) {
